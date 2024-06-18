@@ -56,8 +56,6 @@ export default function RegisterScreen() {
         value={password}
         onChangeText={onChangePassword}
       />
-      <Text>{email}</Text>
-      <Text>{password}</Text>
       <Button
         title="회원가입"
         onPress={signUpRequest}

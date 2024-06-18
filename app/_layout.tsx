@@ -31,6 +31,13 @@ export default function RootLayout() {
           title: "계좌 연결"
         }}
       />
+      <Stack.Screen
+        name="transactionRequest"
+        options={{
+          headerShown: true,
+          title: "계좌 거래내역 요청"
+        }}
+      />
     </Stack>
   );
 }
