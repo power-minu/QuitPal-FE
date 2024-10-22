@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "quitPal",
-    "slug": "quitPal",
+    "slug": "quitpal",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -31,6 +31,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0a261f08-d2f7-4fe0-a951-a203d3373bd2"
+      }
+    },
+    "owner": "mw0677"
   }
 }

@@ -41,7 +41,7 @@ export default function ConnectAccountScreen() {
         const password = bankPassword
 
         const response = await fetch(
-            'http://172.30.1.38:8080/connected-id',
+            'http://192.168.0.8:8080/connected-id',
             {
                 method: 'POST',
                 headers: {

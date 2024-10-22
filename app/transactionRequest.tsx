@@ -17,7 +17,7 @@ interface Transaction {
     tranDesc: string;
 }
 
-export default function AfterLoginScreen() {
+export default function CodefTransactionScreen() {
     const router = useRouter();
 
     const [birthDate, onChangeBirthDate] = React.useState('');
@@ -47,7 +47,7 @@ export default function AfterLoginScreen() {
         const inquiryType = '0'
 
         const response = await fetch(
-            'http://172.30.1.38:8080/trans',
+            'http://192.168.0.8:8080/trans',
             {
                 method: 'POST',
                 headers: {

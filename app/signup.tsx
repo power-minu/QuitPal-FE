@@ -12,7 +12,7 @@ export default function RegisterScreen() {
 
   const signUpRequest = async () => {
     const response = await fetch(
-      'http://172.30.1.38:8080/auth/signup',
+      'http://192.168.0.8:8080/auth/signup',
       {
         method: 'POST',
         headers: {

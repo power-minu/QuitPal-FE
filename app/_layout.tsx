@@ -38,6 +38,13 @@ export default function RootLayout() {
           title: "계좌 거래내역 요청"
         }}
       />
+      <Stack.Screen
+        name="quitpaltxs"
+        options={{
+          headerShown: true,
+          title: "등록된 거래내역"
+        }}
+      />
     </Stack>
   );
 }

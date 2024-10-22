@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Text, View, TextInput, StyleSheet, Button } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from 'expo-notifications';
 
 export default function IndexScreen() {
   const router = useRouter();
@@ -12,6 +13,13 @@ export default function IndexScreen() {
   const [accessToken, onChangeAccessToken] = React.useState('');
   const [accessTokenExpires, onChangeAccessTokenExpires] = React.useState('');
 
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
 
   const checkLoginStatus = async () => {
     const token = await AsyncStorage.getItem('QP_ACCESSTOKEN');
@@ -31,16 +39,11 @@ export default function IndexScreen() {
       }
     }
   };
-
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
-
   const loginRequest = async () => {
     const email = signInEmail
     const password = signInPassword
     const response = await fetch(
-      'http://172.30.1.38:8080/auth/login',
+      'http://192.168.0.8:8080/auth/login',
       {
         method: 'POST',
         headers: {
@@ -58,6 +61,19 @@ export default function IndexScreen() {
       await AsyncStorage.setItem('QP_ACCESSTOKEN', newAccessToken);
       await AsyncStorage.setItem('QP_ACCESSTOKEN_EXPIRES', String(newAccessTokenExpires));
 
+      // Push Notification 토큰 가져오기
+      const pushToken = (await Notifications.getExpoPushTokenAsync()).data;
+      
+      // 백엔드에 Push Token 업데이트 요청
+      await fetch(`http://192.168.0.8:8080/user/push-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${newAccessToken}`, // 토큰을 인증 헤더에 포함
+        },
+        body: JSON.stringify({ pushToken }),
+      });
+
       onChangeAccessToken(newAccessToken);
       onChangeAccessTokenExpires(String(newAccessTokenExpires));
       router.push("/after");
@@ -65,6 +81,16 @@ export default function IndexScreen() {
       return 0;
     }
   };
+
+  useEffect(() => {
+    checkLoginStatus();
+    (async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        alert('알림 권한이 거부되었습니다!');
+      }
+    })();
+  }, []);
 
   return (
     <SafeAreaView

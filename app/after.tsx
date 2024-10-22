@@ -18,7 +18,7 @@ export default function AfterLoginScreen() {
 
     const getMyInfo = async () => {
         const response = await fetch(
-            'http://172.30.1.38:8080/user/me',
+            'http://192.168.0.8:8080/user/me',
             {
                 method: 'GET',
                 headers: {
@@ -32,7 +32,7 @@ export default function AfterLoginScreen() {
 
     const getMyAccountTransactions = async () => {
         const response = await fetch(
-            'http://172.30.1.38:8080/trans',
+            'http://192.168.0.8:8080/trans',
             {
                 method: 'GET',
                 headers: {
@@ -58,6 +58,7 @@ export default function AfterLoginScreen() {
             <Text>{myInfo}로 로그인되었습니다.</Text>
             <Button title="은행계좌 연결하기" onPress={() => router.push("/connectAccount")}></Button>
             <Button title="(계좌)의심 거래내역 보기" onPress={() => { router.push("/transactionRequest") }}></Button>
+            <Button title="QuitPal에 등록된 거래내역들 보기" onPress={() => { router.push("/quitpaltxs") }}></Button>
             <Button title="Sign Out" onPress={signout}></Button>
         </SafeAreaView>
     );
