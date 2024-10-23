@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, View, TextInput, StyleSheet, Button } from "react-native";
+import { Text, View, Button, ScrollView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface QuitPalTransaction {
@@ -13,7 +13,10 @@ interface QuitPalTransaction {
 }
 
 export default function QuitPalTransactionScreen() {
-    const [susHistory, onChangeSusHistory] = React.useState('');
+
+    const router = useRouter();
+    const [transactions, setTransactions] = useState<QuitPalTransaction[]>([]);
+    useEffect(() => { getMyQuitPalTransactions(); }, []);
 
     const getMyQuitPalTransactions = async () => {
         const response = await fetch(
@@ -28,21 +31,31 @@ export default function QuitPalTransactionScreen() {
         );
         if (response.status === 200) {
             const transactionList: QuitPalTransaction[] = await response.json();
-            transactionList.forEach((transaction: QuitPalTransaction) => {
-                onChangeSusHistory(
-                    prevHistory => prevHistory
-                    + transaction.place + ', '
-                    + transaction.amount + '원, '
-                    + transaction.purchaseDate + '\n'
-                    + 'checked: ' + transaction.checked + ', '
-                    + 'expired: ' + transaction.expired
-                    + '\n\n'
-                );
-            });
+            const filteredTransactions = transactionList.filter(
+                (transaction: QuitPalTransaction) => !transaction.checked && !transaction.expired
+            );
+            setTransactions(filteredTransactions);
+            // transactionList.forEach((transaction: QuitPalTransaction) => {
+            //     onChangeSusHistory(
+            //         prevHistory => prevHistory
+            //         + transaction.place + ', '
+            //         + transaction.amount + '원, '
+            //         + transaction.purchaseDate + '\n'
+            //         + 'checked: ' + transaction.checked + ', '
+            //         + 'expired: ' + transaction.expired
+            //         + '\n\n'
+            //     );
+            // });
         } else {
             return 0;
         }
     }
+    const navigateToVerifyScreen = (transaction: QuitPalTransaction) => {
+        router.push({
+            pathname: '/verifyTransaction',
+            params: { transaction: JSON.stringify(transaction) }
+        });
+    };
 
     return (
         <SafeAreaView
@@ -53,20 +66,24 @@ export default function QuitPalTransactionScreen() {
                 padding: 10
             }}
         >
-            <Button title="요청" onPress={getMyQuitPalTransactions}></Button>
-            <Text>
-                {susHistory}
-            </Text>
+            <ScrollView>
+                {transactions.length > 0 ? (
+                    transactions.map((transaction, index) => (
+                        <View key={index} style={{ marginBottom: 20 }}>
+                            <Text>
+                                {transaction.place}, {transaction.amount}원, {transaction.purchaseDate}
+                            </Text>
+                            <Button
+                                title="검증하기"
+                                onPress={() => navigateToVerifyScreen(transaction)} // 검증 화면으로 이동
+                            />
+                        </View>
+                    ))
+                ) : (
+                    <Text>검증할 결제 내역이 없습니다.</Text>
+                )}
+            </ScrollView>
         </SafeAreaView>
     );
-}
 
-const styles = StyleSheet.create({
-    input: {
-        height: 40,
-        margin: 12,
-        borderWidth: 1,
-        padding: 10,
-        width: 250
-    },
-});
+}

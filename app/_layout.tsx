@@ -45,6 +45,13 @@ export default function RootLayout() {
           title: "등록된 거래내역"
         }}
       />
+      <Stack.Screen
+        name="verifyTransaction"
+        options={{
+          headerShown: true,
+          title: "결제내역 검증하기"
+        }}
+      />
     </Stack>
   );
 }
