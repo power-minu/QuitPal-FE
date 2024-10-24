@@ -1,3 +1,4 @@
+import OpenAI from "openai";
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Button, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
@@ -16,12 +17,13 @@ export default function VerifyTransactionScreen() {
 
     const cameraRef = useRef<CameraView | null>(null);
 
+    const openai = new OpenAI({ apiKey: getEnvVars(__DEV__).openAiKey });
+
     useEffect(() => {
         (async () => {
             const { status } = await requestPermission();
             setHasPermission(status === 'granted');
         })();
-        console.log(getEnvVars(__DEV__).ocrUrl);
     }, []);
 
     if (hasPermission === null) {
@@ -91,13 +93,18 @@ export default function VerifyTransactionScreen() {
                 })
 
                 if (response.ok) {
-                    response.json().then(data => {
-                        data.images[0].fields.forEach((element: any) => {
-                            console.log(element.inferText);
-                        })
-                    });
+                    const data = await response.json();
 
-                    Alert.alert('성공', '이미지가 성공적으로 전송되었습니다.');
+                    // 모든 inferText를 띄어쓰기로 구분해 합치기
+                    const collection = data.images[0].fields
+                        .map((element: any) => element.inferText)
+                        .join(' ');
+
+                    // 합친 문자열을 sendToAi 함수에 전달
+                    sendTextToAi(collection);
+                    // console.log(collection);
+
+                    Alert.alert('성공', '텍스트 인식이 성공했습니다.');
                     setPhotoBase64(null);
                 } else {
                     Alert.alert('오류', '이미지 전송에 실패했습니다. ' + response.status);
@@ -110,7 +117,20 @@ export default function VerifyTransactionScreen() {
             }
         }
     };
-
+    const sendTextToAi = async (collection: string) => {
+        console.log(collection + ' 을 gpt에게 보내겠습니다.');
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                { role: "system", content: "나는 영수증의 사진을 OCR로 텍스트화하고, 텍스트화된 결과물을 너에게 줄 거야. 너는 그 텍스트에서, 구매한 물건들의 이름만 알려주면 돼. 여러 개일 경우에는 , 으로 구분해서 줘." },
+                {
+                    role: "user",
+                    content: collection,
+                },
+            ],
+        });
+        console.log(completion.choices[0].message.content);
+    }
 
     return (
         <View style={{ flex: 1, padding: 20 }}>
