@@ -47,7 +47,7 @@ export default function CodefTransactionScreen() {
         const inquiryType = '0'
 
         const response = await fetch(
-            'http://192.168.0.8:8080/trans',
+            'http://192.168.0.8:8080/codef/trans',
             {
                 method: 'POST',
                 headers: {
@@ -64,7 +64,7 @@ export default function CodefTransactionScreen() {
             const transactionList: Transaction[] = responseJson.data.resTrHistoryList
 
             transactionList.forEach((transaction: Transaction) => {
-                console.log('금액 : ' + transaction.resAccountOut)
+                console.log(transaction.resAccountDesc3 + ', ' + '금액 : ' + transaction.resAccountOut)
                 if (transaction.resAccountDesc3.includes('씨유') && (transaction.resAccountOut == '4500' || transaction.resAccountOut == '5000' || transaction.resAccountOut == '5300')) {
                     onChangeSusHistory(susHistory + transaction.resAccountTrDate + '에, ' + transaction.resAccountDesc3 + ' 에서 ' + transaction.resAccountOut + '원 결제함\n');
                 }
