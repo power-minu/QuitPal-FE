@@ -30,18 +30,6 @@ export default function AfterLoginScreen() {
         onChangeMyInfo(String(responseJson.email));
     }
 
-    const getMyAccountTransactions = async () => {
-        const response = await fetch(
-            'http://192.168.0.8:8080/trans',
-            {
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer ' + await AsyncStorage.getItem('QP_ACCESSTOKEN'),
-                }
-            }
-        );
-    }
-
     useEffect(() => {
         getMyInfo();
     }, [])
@@ -57,7 +45,6 @@ export default function AfterLoginScreen() {
         >
             <Text>{myInfo}로 로그인되었습니다.</Text>
             <Button title="은행계좌 연결하기" onPress={() => router.push("/connectAccount")}></Button>
-            <Button title="(계좌)의심 거래내역 보기" onPress={() => { router.push("/transactionRequest") }}></Button>
             <Button title="QuitPal에 등록된 거래내역들 보기" onPress={() => { router.push("/quitpaltxs") }}></Button>
             <Button title="Sign Out" onPress={signout}></Button>
         </SafeAreaView>

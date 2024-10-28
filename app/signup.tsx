@@ -8,6 +8,7 @@ export default function RegisterScreen() {
 
   const [email, onChangeEmail] = React.useState('');
   const [password, onChangePassword] = React.useState('');
+  const [birthDate, onChangeBirthDate] = React.useState('');
   const [result, onChangeResult] = React.useState('');
 
   const signUpRequest = async () => {
@@ -18,7 +19,7 @@ export default function RegisterScreen() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({email, password})
+        body: JSON.stringify({email, password, birthDate})
       }
     );
 
@@ -55,6 +56,14 @@ export default function RegisterScreen() {
         secureTextEntry={true}
         value={password}
         onChangeText={onChangePassword}
+      />
+      <TextInput
+        style={styles.input}
+        keyboardType="decimal-pad"
+        maxLength={6}
+        placeholder="birthDate(ex. 700101)"
+        value={birthDate}
+        onChangeText={onChangeBirthDate}
       />
       <Button
         title="회원가입"

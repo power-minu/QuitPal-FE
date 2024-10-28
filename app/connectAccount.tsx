@@ -9,16 +9,16 @@ import { AntDesign } from "@expo/vector-icons";
 export default function ConnectAccountScreen() {
     const bankData = [
         { label: 'KB 국민은행', value: '1' },
-        { label: '대구은행', value: '2' },
-        { label: '추가 예정', value: '3' },
+        { label: '추가 예정', value: '2' },
     ];
 
     const [bank, setBank] = React.useState<String | null>(null);
     const [isBankFocus, setIsBankFocus] = React.useState(false);
     const [bankId, onChangeBankId] = React.useState('');
     const [bankPassword, onChangeBankPassword] = React.useState('');
-    const [birthDate, onChangeBirthDate] = React.useState('');
     const [result, onChangeResult] = React.useState('');
+    const [accountNumber, onChangeAccountNumber] = React.useState('');
+    const [accountPassword, onChangeAccountPassword] = React.useState('');
 
     const router = useRouter();
 
@@ -49,7 +49,7 @@ export default function ConnectAccountScreen() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(
-                    { countryCode, businessType, clientType, organization, loginType, id, password, birthDate }
+                    { countryCode, businessType, clientType, organization, loginType, id, password, accountNumber, accountPassword }
                 )
             }
         );
@@ -119,11 +119,19 @@ export default function ConnectAccountScreen() {
             />
             <TextInput
                 style={styles.input}
-                keyboardType="default"
+                keyboardType="decimal-pad"
                 maxLength={50}
-                placeholder="생년월일 (ex.970615)"
-                value={birthDate}
-                onChangeText={onChangeBirthDate}
+                placeholder="계좌번호"
+                value={accountNumber}
+                onChangeText={onChangeAccountNumber}
+            />
+            <TextInput
+                style={styles.input}
+                keyboardType="decimal-pad"
+                maxLength={50}
+                placeholder="계좌비밀번호"
+                value={accountPassword}
+                onChangeText={onChangeAccountPassword}
             />
             <Button
                 title="제출"

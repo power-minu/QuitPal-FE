@@ -32,13 +32,6 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
-        name="transactionRequest"
-        options={{
-          headerShown: true,
-          title: "계좌 거래내역 요청"
-        }}
-      />
-      <Stack.Screen
         name="quitpaltxs"
         options={{
           headerShown: true,
