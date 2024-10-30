@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
-import { Text, View, TextInput, StyleSheet, Button } from "react-native";
+import { Text, View, TextInput, StyleSheet, Button, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from 'expo-notifications';
+import getEnvVars from '../environment';
 
 export default function IndexScreen() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function IndexScreen() {
   const [signInPassword, onChangeSignInPassword] = React.useState('');
   const [accessToken, onChangeAccessToken] = React.useState('');
   const [accessTokenExpires, onChangeAccessTokenExpires] = React.useState('');
+
+  const backEndAddress = getEnvVars(__DEV__).backEndAddress;
 
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -34,7 +37,7 @@ export default function IndexScreen() {
 
       if (expiringTime.getTime() > now.getTime() + 1000 * 60 * 30) {
         setTimeout(() => {
-          router.push("./after");
+          router.push("./afterLogin");
         }, 0);
       }
     }
@@ -43,7 +46,7 @@ export default function IndexScreen() {
     const email = signInEmail
     const password = signInPassword
     const response = await fetch(
-      'http://192.168.0.8:8080/auth/login',
+      backEndAddress + '/auth/login',
       {
         method: 'POST',
         headers: {
@@ -63,9 +66,9 @@ export default function IndexScreen() {
 
       // Push Notification 토큰 가져오기
       const pushToken = (await Notifications.getExpoPushTokenAsync()).data;
-      
+
       // 백엔드에 Push Token 업데이트 요청
-      await fetch(`http://192.168.0.8:8080/user/push-token`, {
+      await fetch(backEndAddress + '/user/push-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +79,7 @@ export default function IndexScreen() {
 
       onChangeAccessToken(newAccessToken);
       onChangeAccessTokenExpires(String(newAccessTokenExpires));
-      router.push("/after");
+      router.push("/afterLogin");
     } else {
       return 0;
     }
@@ -92,46 +95,128 @@ export default function IndexScreen() {
     })();
   }, []);
 
+  // return (
+  //   <SafeAreaView
+  //     style={{
+  //       flex: 1,
+  //       justifyContent: "center",
+  //       alignItems: "center",
+  //       padding: 10
+  //     }}
+  //   >
+  //     <TextInput
+  //       style={styles.input}
+  //       keyboardType="email-address"
+  //       maxLength={50}
+  //       placeholder="email"
+  //       value={signInEmail}
+  //       onChangeText={onChangeSignInEmail}
+  //     />
+  //     <TextInput
+  //       style={styles.input}
+  //       keyboardType="visible-password"
+  //       maxLength={50}
+  //       placeholder="password"
+  //       secureTextEntry={true}
+  //       value={signInPassword}
+  //       onChangeText={onChangeSignInPassword}
+  //     />
+  //     <Text>{accessToken}</Text>
+  //     <Text>{accessTokenExpires}</Text>
+  //     <Button title="Sign In" onPress={loginRequest}></Button>
+  //     <Button title="Sign Up" onPress={() => router.push("/signup")}></Button>
+  //   </SafeAreaView>
+  // );
+
   return (
     <SafeAreaView
       style={{
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        padding: 10
+        padding: 20,
+        backgroundColor: "#f0f4f8"
       }}
     >
+      <Image
+        source={require('../imgs/logo.png')}
+        style={{
+          width: 100,
+          height: 100,
+          marginBottom: 30
+        }}
+      />
       <TextInput
-        style={styles.input}
+        style={{
+          width: "100%",
+          padding: 15,
+          marginBottom: 15,
+          borderRadius: 10,
+          borderColor: "#d1d5db",
+          borderWidth: 1,
+          backgroundColor: "#ffffff",
+          fontSize: 16
+        }}
         keyboardType="email-address"
         maxLength={50}
-        placeholder="email"
+        placeholder="Email"
         value={signInEmail}
         onChangeText={onChangeSignInEmail}
       />
       <TextInput
-        style={styles.input}
+        style={{
+          width: "100%",
+          padding: 15,
+          marginBottom: 20,
+          borderRadius: 10,
+          borderColor: "#d1d5db",
+          borderWidth: 1,
+          backgroundColor: "#ffffff",
+          fontSize: 16
+        }}
         keyboardType="visible-password"
         maxLength={50}
-        placeholder="password"
+        placeholder="Password"
         secureTextEntry={true}
         value={signInPassword}
         onChangeText={onChangeSignInPassword}
       />
-      <Text>{accessToken}</Text>
-      <Text>{accessTokenExpires}</Text>
-      <Button title="Sign In" onPress={loginRequest}></Button>
-      <Button title="Sign Up" onPress={() => router.push("/signup")}></Button>
+      <TouchableOpacity
+        style={{
+          width: "100%",
+          padding: 15,
+          backgroundColor: "#1e90ff",
+          borderRadius: 10,
+          alignItems: "center",
+          marginBottom: 10
+        }}
+        onPress={loginRequest}
+      >
+        <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "bold" }}>Sign In</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={{
+          width: "100%",
+          padding: 15,
+          backgroundColor: "#4ade80",
+          borderRadius: 10,
+          alignItems: "center"
+        }}
+        onPress={() => router.push("/signup")}
+      >
+        <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "bold" }}>Sign Up</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
+
 }
 
-const styles = StyleSheet.create({
-  input: {
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
-    padding: 10,
-    width: 250
-  },
-});
+// const styles = StyleSheet.create({
+//   input: {
+//     height: 40,
+//     margin: 12,
+//     borderWidth: 1,
+//     padding: 10,
+//     width: 250
+//   },
+// });

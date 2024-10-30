@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Text, View, TextInput, StyleSheet, Button } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import getEnvVars from '../environment';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -11,9 +12,11 @@ export default function RegisterScreen() {
   const [birthDate, onChangeBirthDate] = React.useState('');
   const [result, onChangeResult] = React.useState('');
 
+  const backEndAddress = getEnvVars(__DEV__).backEndAddress;
+
   const signUpRequest = async () => {
     const response = await fetch(
-      'http://192.168.0.8:8080/auth/signup',
+      backEndAddress + '/auth/signup',
       {
         method: 'POST',
         headers: {

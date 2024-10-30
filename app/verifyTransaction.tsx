@@ -1,23 +1,26 @@
 import OpenAI from "openai";
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Button, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
-import { useLocalSearchParams } from 'expo-router';
+import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import getEnvVars from '../environment';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function VerifyTransactionScreen() {
+    const router = useRouter();
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [photoBase64, setPhotoBase64] = useState<string | null>(null);
     const [facing, setFacing] = useState<CameraType>('back');
     const [permission, requestPermission] = useCameraPermissions();
-    const { transaction } = useLocalSearchParams(); // 쿼리로 전달된 transaction 데이터 받기
-    const parsedTransaction = transaction ? JSON.parse(transaction as string) : null; // JSON으로 파싱
+    const { transaction } = useLocalSearchParams();
+    const parsedTransaction = transaction ? JSON.parse(transaction as string) : null;
 
     const cameraRef = useRef<CameraView | null>(null);
 
     const openai = new OpenAI({ apiKey: getEnvVars(__DEV__).openAiKey });
+    const backEndAddress = getEnvVars(__DEV__).backEndAddress;
 
     useEffect(() => {
         (async () => {
@@ -26,31 +29,25 @@ export default function VerifyTransactionScreen() {
         })();
     }, []);
 
-    if (hasPermission === null) {
-        return <Text>카메라 권한을 확인 중입니다...</Text>;
-    }
-    if (hasPermission === false) {
-        return <Text>카메라 사용 권한이 없습니다.</Text>;
-    }
+    if (hasPermission === null) return <Text style={styles.message}>카메라 권한을 확인 중입니다...</Text>;
+    if (hasPermission === false) return <Text style={styles.message}>카메라 사용 권한이 없습니다.</Text>;
 
     function toggleCameraFacing() {
-        setFacing(current => (current === 'back' ? 'front' : 'back'));
+        setFacing((current) => (current === 'back' ? 'front' : 'back'));
     }
-
     const takePicture = async () => {
         if (cameraRef.current) {
             try {
-                const photo = await cameraRef.current.takePictureAsync({ base64: true }); // base64 인코딩
-
+                const photo = await cameraRef.current.takePictureAsync({ base64: true });
                 if (!photo) {
                     console.error("사진 촬영에 실패했습니다.");
                     return;
                 }
 
                 const manipulatedImage = await manipulateAsync(
-                    photo.uri, // 촬영한 사진의 URI
-                    [{ resize: { width: 1024 } }], // 원하는 크기로 조정 (가로 1024px)
-                    { compress: 0.5, format: SaveFormat.JPEG } // JPEG 포맷으로 압축
+                    photo.uri,
+                    [{ resize: { width: 1024 } }],
+                    { compress: 0.5, format: SaveFormat.JPEG }
                 );
 
                 const complete = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
@@ -102,9 +99,6 @@ export default function VerifyTransactionScreen() {
 
                     // 합친 문자열을 sendToAi 함수에 전달
                     sendTextToAi(collection);
-                    // console.log(collection);
-
-                    Alert.alert('성공', '텍스트 인식이 성공했습니다.');
                     setPhotoBase64(null);
                 } else {
                     Alert.alert('오류', '이미지 전송에 실패했습니다. ' + response.status);
@@ -130,12 +124,15 @@ export default function VerifyTransactionScreen() {
             ],
         });
         const reply = completion.choices[0].message.content;
-        console.log(reply);
-        if (reply) verifyPlace(reply);
+        console.log('ocr 텍스트를 gpt로 해석한 결과: ' + reply);
+        if (reply) verifyPlaceAndItems(reply);
     }
-    const verifyPlace = async (reply: string) => {
+    const verifyPlaceAndItems = async (reply: string) => {
         const replyList: string[] = reply.split(',').map(item => item.trim());
         const receiptPlace: string = replyList[0];
+        const items: string[] = replyList.slice(1, replyList.length - 2);
+        const amount: number = parseInt(replyList[replyList.length - 2], 10);
+        const date: string = replyList[replyList.length - 1];
         const txPlace = parsedTransaction.place;
 
         const gptSendContent: string = receiptPlace + ', ' + txPlace;
@@ -150,38 +147,73 @@ export default function VerifyTransactionScreen() {
             ],
         });
         const placeMatch = completion.choices[0].message.content;
-        console.log(placeMatch);
+        console.log('영수증에 나온 장소가 구매한 장소가 맞는지 gpt에게 물어본 결과: ' + placeMatch);
+        if (placeMatch == 'Y') {
+            const transactionId = Number(parsedTransaction.id);
+            const response = await fetch(backEndAddress + '/search/cigarette', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + await AsyncStorage.getItem('QP_ACCESSTOKEN'),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ transactionId, items }),
+            });
+
+            if (response.status === 200) {
+                Alert.alert(
+                    '결과',
+                    '검증에 성공했습니다.',
+                    [
+                        {
+                            text: '확인',
+                            onPress: () => router.back()
+                        }
+                    ]
+                );
+            } else if (response.status === 202) {
+                alert('담배가 있습니다...');
+            } else {
+                alert('오류입니다!!');
+                console.error('Unexpected response:', response.status, response.statusText);
+            }
+        }
+        else {
+            console.log('gpt의 대답: ' + placeMatch);
+            alert('영수증의 장소 정보가 일치하지 않습니다.');
+        }
     }
 
     return (
-        <View style={{ flex: 1, padding: 20 }}>
+        <View style={styles.container}>
             {parsedTransaction && (
-                <View style={{ marginBottom: 20 }}>
-                    <Text>거래처: {parsedTransaction.place}</Text>
-                    <Text>금액: {parsedTransaction.amount} 원</Text>
-                    <Text>구매일: {parsedTransaction.purchaseDate}</Text>
+                <View style={styles.transactionContainer}>
+                    <Text style={styles.transactionText}>거래처: {parsedTransaction.place}</Text>
+                    <Text style={styles.transactionText}>금액: {parsedTransaction.amount} 원</Text>
+                    <Text style={styles.transactionText}>구매일: {parsedTransaction.purchaseDate}</Text>
                 </View>
             )}
 
             {photoBase64 ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={styles.previewContainer}>
                     <Image
                         source={{ uri: `data:image/jpg;base64,${photoBase64}` }}
-                        style={{ width: 450, height: 600 }}
+                        style={styles.previewImage}
                         resizeMode="contain"
                     />
-                    <Button title="다시 찍기" onPress={() => setPhotoBase64(null)} />
-                    <Button title="이미지 전송" onPress={sendImageToOcr} />
+                    <TouchableOpacity style={styles.button} onPress={() => setPhotoBase64(null)}>
+                        <Text style={styles.buttonText}>다시 찍기</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.button, { backgroundColor: '#1e90ff' }]} onPress={sendImageToOcr}>
+                        <Text style={styles.buttonText}>이미지 전송</Text>
+                    </TouchableOpacity>
                 </View>
             ) : (
                 <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
                     <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-                            <Text style={styles.text}>Flip Camera</Text>
+                        <TouchableOpacity style={styles.circleButton} onPress={toggleCameraFacing}>
+                            <Text style={styles.text}>↔</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.button} onPress={takePicture}>
-                            <Text style={styles.text}>촬영</Text>
-                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.captureButton} onPress={takePicture} />
                     </View>
                 </CameraView>
             )}
@@ -189,33 +221,83 @@ export default function VerifyTransactionScreen() {
     );
 }
 
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
+        backgroundColor: "#f8f9fa",
     },
     message: {
         textAlign: 'center',
-        paddingBottom: 10,
+        marginVertical: 20,
+        fontSize: 18,
+        color: "#333",
+    },
+    transactionContainer: {
+        padding: 15,
+        backgroundColor: "#fff",
+        margin: 20,
+        borderRadius: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    transactionText: {
+        fontSize: 16,
+        color: "#333",
+        marginBottom: 5,
+    },
+    previewContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    previewImage: {
+        width: '100%',
+        height: '60%',
+        borderRadius: 10,
+        marginBottom: 20,
     },
     camera: {
         flex: 1,
+        justifyContent: 'flex-end',
     },
     buttonContainer: {
-        flex: 1,
         flexDirection: 'row',
-        backgroundColor: 'transparent',
-        margin: 64,
+        justifyContent: 'center',
+        marginBottom: 20,
     },
     button: {
-        flex: 1,
-        alignSelf: 'flex-end',
-        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        backgroundColor: "#ff6347",
+        borderRadius: 8,
+        marginHorizontal: 5,
+    },
+    buttonText: {
+        color: "#fff",
+        fontSize: 16,
+        fontWeight: "bold",
+    },
+    circleButton: {
+        backgroundColor: "rgba(255, 255, 255, 0.5)",
+        padding: 15,
+        borderRadius: 50,
+        marginHorizontal: 15,
+    },
+    captureButton: {
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
+        borderRadius: 50,
+        width: 70,
+        height: 70,
+        alignSelf: 'center',
+        marginVertical: 10,
     },
     text: {
-        fontSize: 24,
+        fontSize: 18,
         fontWeight: 'bold',
-        color: 'white',
+        color: "#333",
     },
 });

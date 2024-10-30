@@ -18,9 +18,9 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
-        name="after"
+        name="afterLogin"
         options={{
-          headerShown: true,
+          headerShown: false,
           title: "로그인 성공"
         }}
       />
