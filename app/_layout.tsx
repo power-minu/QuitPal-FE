@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 
 export default function RootLayout() {
   return (
-    <Stack initialRouteName="login">
+    <Stack initialRouteName="index">
       <Stack.Screen
         name="index"
         options={{
